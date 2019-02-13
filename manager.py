@@ -10,7 +10,7 @@ URLS = [
     'https://www.sports.ru/tribuna/blogs/hardenstravel/2344878.html',
     'https://www.sports.ru/tribuna/blogs/basketblog/2343864.html',
     'https://www.sports.ru/tribuna/blogs/makarizm/2343793.html',
-    'https://www.sports.ru/tribuna/blogs/ball_in/2343822.html',
+    'https://www.sports.ru/tribuna/blogs/midrange/2342837.html',
     'https://www.sports.ru/tribuna/blogs/somenbainfo/2343473.html',
     'https://www.sports.ru/tribuna/blogs/damnit/2342634.html',
 ]
