@@ -2,40 +2,17 @@ import requests
 import psycopg2
 from parsel import Selector
 
-URLS = [
-    'https://www.sports.ru/tribuna/blogs/personalfoul/2346278.html',
-    'https://www.sports.ru/tribuna/blogs/sviridov/2345658.html',
-    'https://www.sports.ru/tribuna/blogs/bankshot/2345435.html',
-    'https://www.sports.ru/tribuna/blogs/trailblazersnews/2345706.html',
-    'https://www.sports.ru/tribuna/blogs/hardenstravel/2344878.html',
-    'https://www.sports.ru/tribuna/blogs/basketblog/2343864.html',
-    'https://www.sports.ru/tribuna/blogs/makarizm/2343793.html',
-    'https://www.sports.ru/tribuna/blogs/midrange/2342837.html',
-    'https://www.sports.ru/tribuna/blogs/somenbainfo/2343473.html',
-    'https://www.sports.ru/tribuna/blogs/damnit/2342634.html',
-    'https://www.sports.ru/tribuna/blogs/sporthub/2342156.html',
-    'https://www.sports.ru/tribuna/blogs/philahyila/2342090.html',
-    'https://www.sports.ru/tribuna/blogs/basketblog/2341995.html',
-    'https://www.sports.ru/tribuna/blogs/makarizm/2341581.html',
-    'https://www.sports.ru/tribuna/blogs/baskettwitter/2341800.html',
-    'https://www.sports.ru/tribuna/blogs/basketprovince/2341522.html',
-    'https://www.sports.ru/tribuna/blogs/discworld/2329342.html',
-    'https://www.sports.ru/tribuna/blogs/lokobasket_official/2341753.html',
-    'https://www.sports.ru/tribuna/blogs/salarycap/804793.html',
-    'https://www.sports.ru/tribuna/blogs/devotion/2342367.html',
-    'https://www.sports.ru/tribuna/blogs/kirillfirefreestylebasketball/2342430.html',
-    'https://www.sports.ru/tribuna/blogs/baskettalk/2341457.html',
-    'https://www.sports.ru/tribuna/blogs/basketblogg/2339387.html',
-    'https://www.sports.ru/tribuna/blogs/celticsfarm/2341009.html',
-    'https://www.sports.ru/tribuna/blogs/basketprovince/2340574.html',
-    'https://www.sports.ru/tribuna/blogs/midrange/2340732.html',
-    'https://www.sports.ru/tribuna/blogs/chicagoganster/2340611.html',
-    'https://www.sports.ru/tribuna/blogs/nbaonrock/2340440.html',
-    'https://www.sports.ru/tribuna/blogs/lokobasket_official/2339351.html',
-    'https://www.sports.ru/tribuna/blogs/midrange/2339611.html',
-]
 
-len(URLS)
+SELECTOR = ".//header[@class='blog-feed__item-header']//a[@class='h1 content-link']/@href"
+
+
+def generate_urls(url: str) -> list:
+    """ Generate urls
+    """
+    with open('page.html', 'r', encoding='utf-8') as f:
+        selector = Selector(f.read())
+        return selector.xpath(SELECTOR).getall()
+
 
 SELECTORS = {
     'body': ".//div[@class='blog-post']",
@@ -47,26 +24,21 @@ SELECTORS = {
 def GET_SELECTOR(title): return f"{SELECTORS['body']}{SELECTORS[title]}"
 
 
-conn_ = psycopg2.connect(database='postgres',
-                         user='postgres',
-                         password='postgres',
-                         host='0.0.0.0',
-                         port=4321)
-connection = conn_.cursor()
-
-
-def parse_urls():
-    for url in URLS:
+def parse_urls(urls):
+    for url in urls:
         element = {}
         selector = Selector(requests.get(url).text)
         element['title'] = selector.xpath(GET_SELECTOR('title')).get()
         element['tags'] = ";".join(selector.xpath(GET_SELECTOR('tags')).getall())
         element['url'] = url
-        element['content'] = "".join(selector.xpath(GET_SELECTOR('content')).getall()).replace("'", '\'')
+        element['content'] = "".join(
+            selector.xpath(
+                GET_SELECTOR('content')).getall()).replace(
+            "'", '\'')
         yield element
 
 
-def create_student():
+def create_student(connection):
     connection.execute("""
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     DROP TABLE IF EXISTS students CASCADE;
@@ -79,7 +51,7 @@ def create_student():
     """)
 
 
-def create_article():
+def create_article(connection):
     connection.execute("""
     DROP TABLE IF EXISTS articles CASCADE;
     CREATE TABLE IF NOT EXISTS articles (
@@ -93,7 +65,7 @@ def create_article():
     """)
 
 
-def insert_student():
+def insert_student(connection):
     connection.execute("""
     INSERT INTO students (name, surname, mygroup) VALUES ('Timur', 'Mardanov', '11-502');
     """)
@@ -103,26 +75,39 @@ def insert_student():
     return connection.fetchone()[0]
 
 
-def insert_articles(data, student_id):
+def insert_articles(connection, data, student_id, conn_):
     query = """
-    INSERT INTO articles (title, keywords, content, url, student_id) VALUES {lazy};;
+    INSERT INTO articles (title, keywords, content, url, student_id) VALUES (%s, %s, %s, %s, %s);
     """
     lazy = []
     for item in data:
         print(item['url'])
-        lazy.append(
-            f"('{item['title']}', '{item['tags']}', '{item['content']}', '{item['url']}', '{student_id}')")
-    lazy = ", ".join(lazy)
-    connection.execute(query.format(lazy=lazy))
+        try:
+            connection.execute(query,
+                               (item['title'],
+                                item['tags'],
+                                item['content'],
+                                item['url'],
+                                student_id))
+            conn_.commit()
+        except Exception as e:
+            print('Incorrect data on page', e)
 
 
 if __name__ == "__main__":
+    urls = generate_urls('https://www.sports.ru/tribuna/basketball/')[:50]
+    conn_ = psycopg2.connect(database='postgres',
+                             user='postgres',
+                             password='postgres',
+                             host='0.0.0.0',
+                             port=4321)
+    connection = conn_.cursor()
     try:
-        create_student()
-        create_article()
-        uid = insert_student()
-        data = parse_urls()
-        insert_articles(data, uid)
+        create_student(connection)
+        create_article(connection)
+        uid = insert_student(connection)
+        data = parse_urls(urls)
+        insert_articles(connection, data, uid, conn_)
         conn_.commit()
     except Exception as e:
         print(e)
