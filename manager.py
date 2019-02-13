@@ -38,7 +38,7 @@ def parse_urls():
         element = {}
         selector = Selector(requests.get(url).text)
         element['title'] = selector.xpath(GET_SELECTOR('title')).get()
-        element['tags'] = ",".join(selector.xpath(GET_SELECTOR('tags')).getall())
+        element['tags'] = ";".join(selector.xpath(GET_SELECTOR('tags')).getall())
         element['url'] = url
         element['content'] = "".join(selector.xpath(GET_SELECTOR('content')).getall())
         yield element
