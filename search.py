@@ -23,7 +23,7 @@ def get_articles(connection, word):
         term_text = %s GROUP BY article_id ORDER BY sort DESC;
     """
     connection.execute(query, (word, ))
-    return numpy.array(connection.fetchall())[:, 0]
+    return numpy.array(list(connection.fetchall()))[:, 0]
 
 def lemmatize_search(search: str):
     toktoks = toktok.ToktokTokenizer()
@@ -79,6 +79,7 @@ if __name__ == "__main__":
     try:
         search_string = str(input("Input search word: "))
         lemmas = lemmatize_search(search_string)
+        print(lemmas)
         articles_ids = list(map(lambda lem: get_articles(cursor, lem), lemmas))
         #  print('standart', reduce(lambda x, y: set(x) & set(y), articles_ids))
         articles = set_articles(articles_ids)
