@@ -33,7 +33,9 @@ def create_article_table(connection, table_name='article_term'):
     DROP TABLE IF EXISTS {table_name} CASCADE;
     CREATE TABLE IF NOT EXISTS {table_name} (
         article_id UUID REFERENCES articles (id) ON DELETE CASCADE,
-        term_id UUID REFERENCES terms_list (term_id) ON DELETE CASCADE
+        term_id UUID REFERENCES terms_list (term_id) ON DELETE CASCADE,
+        tf_idf FLOAT DEFAULT 0,
+        UNIQUE(article_id, term_id)
     );
     """
     connection.execute(query)
@@ -65,7 +67,11 @@ def insert_into_terms(connection, results):
     """
     for item in results:
         uid = res[item[0]]
-        connection.execute(query, (uid, item[1]))
+        try:
+            connection.execute(query, (uid, item[1]))
+            connection.commit()
+        except Exception as e:
+            pass
 
 
 if __name__ == "__main__":
