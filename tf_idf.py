@@ -1,5 +1,6 @@
 import psycopg2
 import numpy
+import math
 from porter import StemmerPorter
 from nltk.tokenize import toktok
 
@@ -61,7 +62,7 @@ def get_idf(connection):
     connection.execute(query)
     results = connection.fetchall()
     for term_id, count_in_documents in results:
-        idf[term_id] = float(document_count[0]) / count_in_documents
+        idf[term_id] = math.log2(float(document_count[0]) / count_in_documents)
     return idf
 
 

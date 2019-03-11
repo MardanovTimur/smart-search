@@ -41,16 +41,16 @@ def create_article_table(connection, table_name='article_term'):
     connection.execute(query)
 
 
-def get_porter_words(connection):
+def get_porter_words(connection, con):
     query = """
     SELECT term, articles_id FROM words_porter;
     """
     connection.execute(query)
     results = connection.fetchall()
-    insert_into_terms(connection, results)
+    insert_into_terms(connection, results, con)
 
 
-def insert_into_terms(connection, results):
+def insert_into_terms(connection, results, con):
     query = """
     INSERT INTO terms_list (term_text) VALUES (%s);
     """
@@ -62,6 +62,7 @@ def insert_into_terms(connection, results):
     """
     connection.execute(query)
     res = dict(connection.fetchall())
+    con.commit()
     query = """
     INSERT INTO article_term (term_id, article_id) VALUES (%s, %s);
     """
@@ -69,9 +70,9 @@ def insert_into_terms(connection, results):
         uid = res[item[0]]
         try:
             connection.execute(query, (uid, item[1]))
-            connection.commit()
+            con.commit()
         except Exception as e:
-            pass
+            con.rollback()
 
 
 if __name__ == "__main__":
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     try:
         create_terms_table(cursor)
         create_article_table(cursor)
-        get_porter_words(cursor)
+        get_porter_words(cursor, connection)
         connection.commit()
     except Exception as e:
         print(e)
