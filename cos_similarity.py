@@ -60,6 +60,11 @@ def get_tf_idf(connection, article_id):
 
 def get_idf(connection, article_id):
     query = """
+    select count(*) from articles;
+    """
+    connection.execute(query)
+    document_count = connection.fetchone()
+    query = """
     select term_id,
            count(article_id) from article_term
         WHERE
@@ -67,8 +72,11 @@ def get_idf(connection, article_id):
     group by term_id;
     """
     connection.execute(query, (article_id, ))
-    results = dict(connection.fetchall())
-    return results
+    results = connection.fetchall()
+    idf = dict()
+    for term_id, count_in_documents in results:
+        idf[term_id] = math.log2(float(document_count[0]) / count_in_documents)
+    return idf
 
 
 
