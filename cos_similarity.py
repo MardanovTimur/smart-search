@@ -67,8 +67,6 @@ def get_idf(connection, article_id):
     query = """
     select term_id,
            count(article_id) from article_term
-        WHERE
-            article_id = %s
     group by term_id;
     """
     connection.execute(query, (article_id, ))
