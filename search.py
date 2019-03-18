@@ -23,7 +23,10 @@ def get_articles(connection, word):
         term_text = %s GROUP BY article_id ORDER BY sort DESC;
     """
     connection.execute(query, (word, ))
-    return numpy.array(list(connection.fetchall()))[:, 0]
+    results = connection.fetchall()
+    if results:
+        return numpy.array(list(results))[:, 0]
+    return []
 
 def lemmatize_search(search: str):
     toktoks = toktok.ToktokTokenizer()
