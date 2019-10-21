@@ -3,7 +3,7 @@ chardet==3.0.4
 cssselect==1.0.3
 idna==2.8
 lxml==4.3.1
-nltk==3.4
+nltk==3.4.5
 parsel==1.5.1
 psycopg2==2.7.7
 pymystem3==0.2.0
